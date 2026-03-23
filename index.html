@@ -361,6 +361,59 @@
 
         document.getElementById('display-date').innerText = new Date().toLocaleDateString('en-US', { weekday:'long', day:'numeric', month:'short', year:'numeric' });
         render();
+        // --- NOTIFICATION LOGIC ---
+
+// 1. Minta Izin Notifikasi saat web dimuat
+function requestNotificationPermission() {
+    if ("Notification" in window) {
+        Notification.requestPermission().then(permission => {
+            if (permission === "granted") {
+                console.log("Izin notifikasi diberikan!");
+            }
+        });
+    }
+}
+
+// 2. Fungsi untuk mengirim notifikasi
+function sendNotification(title, message) {
+    if ("Notification" in window && Notification.permission === "granted") {
+        new Notification(title, {
+            body: message,
+            icon: "https://cdn-icons-png.flaticon.com/512/3534/3534033.png" // Ganti dengan logo Anda
+        });
+    }
+}
+
+// Panggil izin saat startup
+requestNotificationPermission();
+
+// --- INTEGRASI KE FUNGSI ANDA ---
+
+// Update fungsi completeTask
+window.completeTask = (index) => {
+    const task = activities[index];
+    sendNotification("Tugas Selesai!", `Mantap Kowir! Tugas "${task.title}" sudah beres.`);
+    
+    const taskData = activities.splice(index, 1)[0];
+    history.unshift(taskData);
+    render();
+}
+
+// Update fungsi tambah tugas (submit form)
+document.getElementById('activity-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const title = document.getElementById('title').value;
+    
+    activities.push({
+        title: title,
+        category: document.getElementById('category').value,
+        deadline: document.getElementById('deadline').value
+    });
+    
+    sendNotification("Agenda Baru!", `Tugas "${title}" berhasil dijadwalkan.`);
+    e.target.reset();
+    render();
+});
     </script>
 </body>
 </html>
