@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maroon Academic Dashboard | UNJ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #fcfcfc; color: #1a1a1a; }
+        .bg-maroon { background-color: #800000; }
+        .text-maroon { color: #800000; }
+        .active-nav { background-color: #800000 !important; color: white !important; box-shadow: 0 10px 20px -5px rgba(128, 0, 0, 0.3); }
+        .tab-content { display: none; animation: fadeIn 0.4s ease-out; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.3); }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #800000; border-radius: 10px; }
+    </style>
+</head>
+<body class="flex min-h-screen">
+
+    <aside class="w-20 lg:w-64 bg-white border-r border-gray-100 flex flex-col items-center py-8 gap-8 sticky top-0 h-screen z-50">
+        <div class="text-maroon text-2xl font-black italic tracking-tighter hidden lg:block">ACTIVITY TRACKER</div>
+        <div class="text-maroon text-2xl font-bold lg:hidden">Q</div>
+        
+        <nav class="flex flex-col gap-3 w-full px-4">
+            <button onclick="switchTab('dashboard', this)" class="nav-btn active-nav flex items-center gap-4 p-4 text-gray-400 hover:bg-red-50 hover:text-maroon rounded-2xl transition-all duration-300 w-full">
+                <i class="fas fa-th-large w-5"></i> <span class="hidden lg:block font-bold text-sm">Dashboard</span>
+            </button>
+            <button onclick="switchTab('courses', this)" class="nav-btn flex items-center gap-4 p-4 text-gray-400 hover:bg-red-50 hover:text-maroon rounded-2xl transition-all duration-300 w-full">
+                <i class="fas fa-graduation-cap w-5"></i> <span class="hidden lg:block font-bold text-sm">Courses</span>
+            </button>
+            <button onclick="switchTab('schedule', this)" class="nav-btn flex items-center gap-4 p-4 text-gray-400 hover:bg-red-50 hover:text-maroon rounded-2xl transition-all duration-300 w-full">
+                <i class="fas fa-calendar-alt w-5"></i> <span class="hidden lg:block font-bold text-sm">Schedule</span>
+            </button>
+        </nav>
+
+        <div class="mt-auto px-4 w-full">
+            <button class="flex items-center gap-4 p-4 text-gray-400 hover:text-red-600 transition w-full">
+                <i class="fas fa-sign-out-alt w-5"></i> <span class="hidden lg:block font-bold text-sm">Logout</span>
+            </button>
+        </div>
+    </aside>
+
+    <main class="flex-grow p-4 lg:p-10 max-w-7xl mx-auto w-full">
+        
+        <header class="flex justify-between items-center mb-10">
+            <div>
+                <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight" id="header-title">Welcome Back, Kowir</h1>
+                <p class="text-gray-400 font-medium text-sm mt-1" id="display-date"></p>
+            </div>
+            <div class="flex items-center gap-3">
+                <button class="w-10 h-10 rounded-full bg-white border border-gray-100 shadow-sm text-gray-400 hover:text-maroon transition"><i class="fas fa-bell"></i></button>
+                <div class="w-10 h-10 rounded-full bg-maroon text-white flex items-center justify-center font-bold shadow-lg shadow-red-100">K</div>
+            </div>
+        </header>
+
+        <section id="dashboard" class="tab-content active">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-50 flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em]">Task Goal</p>
+                        <h2 class="text-3xl font-black text-gray-800 mt-1" id="stat-ratio">0/0</h2>
+                        <p class="text-green-500 text-[10px] font-bold mt-2"><i class="fas fa-arrow-up"></i> Keep it up!</p>
+                    </div>
+                    <div class="w-24 h-24"><canvas id="progressChart"></canvas></div>
+                </div>
+
+                <div class="bg-maroon p-7 rounded-[2.5rem] shadow-2xl text-white md:col-span-2 relative overflow-hidden">
+                    <div class="relative z-10">
+                        <div class="flex justify-between items-center mb-4">
+                            <p class="text-red-200 text-[10px] font-black uppercase tracking-[0.2em]">Busy Rate</p>
+                            <span class="bg-white/10 px-3 py-1 rounded-full text-[10px] font-bold">Weekly View</span>
+                        </div>
+                        <div class="h-28 w-full"><canvas id="busyChart"></canvas></div>
+                    </div>
+                    <div class="absolute -right-10 -bottom-10 w-44 h-44 bg-white/5 rounded-full"></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-50 h-fit sticky top-10">
+                    <h3 class="font-black text-xl mb-6 flex items-center gap-3">
+                        <span class="w-1.5 h-6 bg-maroon rounded-full"></span> Add Task
+                    </h3>
+                    <form id="task-form" class="space-y-4">
+                        <input type="text" id="title" required placeholder="What needs to be done?" class="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 focus:ring-red-100 transition font-medium">
+                        <div class="grid grid-cols-2 gap-3">
+                            <select id="category" class="w-full p-4 bg-gray-50 rounded-2xl outline-none text-sm font-bold text-gray-500">
+                                <option value="Kuliah">Tugas Kuliah</option>
+                                <option value="Praktikum">Laporan Praktikum</option>
+                                <option value="Organisasi">Organisasi/Activity</option>
+                            </select>
+                            <input type="datetime-local" id="deadline" required class="w-full p-4 bg-gray-50 rounded-2xl outline-none text-[10px] font-bold text-gray-500">
+                        </div>
+                        <button type="submit" class="w-full bg-maroon text-white font-black py-4 rounded-2xl shadow-xl shadow-red-100 hover:scale-[1.02] active:scale-95 transition-all">CREATE TASK</button>
+                    </form>
+                </div>
+
+                <div class="lg:col-span-2 space-y-10">
+                    <div>
+                        <div class="flex justify-between items-center mb-6 px-2">
+                            <h3 class="font-black text-xl">Recent Tasks</h3>
+                            <span class="text-[10px] font-black text-maroon bg-red-50 px-3 py-1 rounded-full" id="active-count">0 ACTIVE</span>
+                        </div>
+                        <div id="activity-list" class="space-y-4"></div>
+                    </div>
+
+                    <div class="pt-8 border-t border-gray-100">
+                        <div class="flex justify-between items-center mb-6 px-2">
+                            <h3 class="font-black text-xl text-gray-300">Activity History</h3>
+                            <i class="fas fa-history text-gray-200"></i>
+                        </div>
+                        <div id="history-list" class="space-y-3"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="courses" class="tab-content">
+            <h2 class="text-2xl font-bold mb-6">Mata Kuliah Semester Ini</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-white p-6 rounded-3xl border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <h4 class="font-bold text-lg">Kimia Organik</h4>
+                        <p class="text-sm text-black-400">4 SKS | M Ruang 106 & 108</p>
+                        <p class="text-sm text-black-400">Dr. Fera Kurniawati & Dr. Hanhan Dianhar</p>
+                    </div>
+                    <div class="text-maroon font-bold text-xl"></div>
+                </div>
+                <div class="bg-white p-6 rounded-3xl border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <h4 class="font-bold text-lg">Kimia Analitik Kualitatif & Kuantitatif</h4>
+                        <p class="text-sm text-black-400">3 SKS | M Ruang 407</p>
+                        <p class="text-sm text-black-400">Rizkia Chandra Widianti, M.Si.</p>
+                    </div>
+                    <div class="text-maroon font-bold text-xl"></div>
+                </div>
+                <div class="bg-white p-6 rounded-3xl border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <h4 class="font-bold text-lg">Kimia Dasar 2</h4>
+                        <p class="text-sm text-black-400">4 SKS | M Ruang 407</p>
+                        <p class="text-sm text-black-400">Dr. Hanhan Dianhar, M.Si. & Fairuz Gianirfan, M.Si.</p>
+                    </div>
+                    <div class="text-maroon font-bold text-xl"></div>
+                </div>
+                <div class="bg-white p-6 rounded-3xl border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <h4 class="font-bold text-lg">Praktikum KAKK</h4>
+                        <p class="text-sm text-black-400">4 SKS | GHA Lantai 8 Lab. KAKK</p>
+                        <p class="text-sm text-black-400">Rizkia Chandra Widianti, M.Si.</p>
+                    </div>
+                    <div class="text-maroon font-bold text-xl"></div>
+                </div>
+                <div class="bg-white p-6 rounded-3xl border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <h4 class="font-bold text-lg">Praktikum Kimdas</h4>
+                        <p class="text-sm text-black-400">4 SKS | GHA Lantai 8 Lab. Kimdas</p>
+                        <p class="text-sm text-black-400">Annisa Aulia Rahmah</p>
+                    </div>
+                    <div class="text-maroon font-bold text-xl"></div>
+                </div>
+                <div class="bg-white p-6 rounded-3xl border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <h4 class="font-bold text-lg">Pendidikan Agama Islam </h4>
+                        <p class="text-sm text-black-400">2 SKS | Daring</p>
+                        <p class="text-sm text-black-400">Atika Marwah</p>
+                    </div>
+                    <div class="text-maroon font-bold text-xl"></div>
+                </div>
+                <div class="bg-white p-6 rounded-3xl border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <h4 class="font-bold text-lg"> Pendidikan Kewarganegaraan</h4>
+                        <p class="text-sm text-black-400">2 SKS | Daring</p>
+                        <p class="text-sm text-black-400">Indah Wardatussa'idah</p>
+                    </div>
+                    <div class="text-maroon font-bold text-xl"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="schedule" class="tab-content">
+            <div class="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="text-gray-400 uppercase text-xs tracking-widest">
+                            <th class="pb-4">Waktu</th>
+                            <th class="pb-4">Senin</th>
+                            <th class="pb-4">Selasa</th>
+                            <th class="pb-4">Rabu</th>
+                            <th class="pb-4">Kamis</th>
+                            <th class="pb-4">Jum'at</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-700 font-medium">
+                        <tr class="border-t">
+                            <td class="py-4 text-xs text-gray-400">08:00</td>
+                            <td class="py-4">-</td>
+                            <td class="py-4">Kimia Organik</td>
+                            <td class="py-4">Praktikum KAKK</td>
+                            <td class="py-4">Praktikum Kimdas</td>
+                            <td class="py-4">Kimia Dasar 2</td>
+                        </tr>
+                        <tr class="border-t"></tr>
+                        <td class="py-4 text-xs text-gray-400">10:00</td>
+                            <td class="py-4">Kimia Dasar 2</td>
+                            <td class="py-4">Kimia Analitik Kualitatif & Kuantitatif</td>
+                            <td class="py-4">Praktikum KAKK</td>
+                            <td class="py-4">Praktikum Kimdas</td>
+                            <td class="py-4">Kimia Organik</td>
+                        </tr>
+                        <tr class="border-t"></tr>
+                        <td class="py-4 text-xs text-gray-400">13:00</td>
+                            <td class="py-4">-</td>
+                            <td class="py-4">Kewarganegaraan</td>
+                            <td class="py-4">Praktikum KAKK</td>
+                            <td class="py-4">Praktikum Kimdas</td>
+                            <td class="py-4">-</td>
+                        </tr>
+                        <tr class="border-t"></tr>
+                        <td class="py-4 text-xs text-gray-400">15:00</td>
+                            <td class="py-4">Pendidikan Agama Islam</td>
+                            <td class="py-4">-</td>
+                            <td class="py-4">Praktikum KAKK</td>
+                            <td class="py-4">Praktikum Kimdas</td>
+                            <td class="py-4">-</td>
+                        </tr>
+                         <tr class="border-t"></tr>
+                        <td class="py-4 text-xs text-gray-400">16:00</td>
+                            <td class="py-4">-</td>
+                            <td class="py-4">-</td>
+                            <td class="py-4">Praktikum KAKK</td>
+                            <td class="py-4">Praktikum Kimdas</td>
+                            <td class="py-4">-</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // --- DATA STATE ---
+        let activities = JSON.parse(localStorage.getItem('maroon_tasks')) || [];
+        let historyData = JSON.parse(localStorage.getItem('maroon_history')) || [];
+
+        // --- NAVIGATION ---
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active-nav'));
+            
+            document.getElementById(tabId).classList.add('active');
+            btn.classList.add('active-nav');
+            
+            const titles = { dashboard: "Welcome Back, Sujon", courses: "My Academic Courses", schedule: "Weekly Schedule" };
+            document.getElementById('header-title').innerText = titles[tabId];
+        }
+
+        // --- CHARTS CONFIG ---
+        const ctxP = document.getElementById('progressChart').getContext('2d');
+        let progressChart = new Chart(ctxP, {
+            type: 'doughnut',
+            data: { datasets: [{ data: [0, 1], backgroundColor: ['#800000', '#f3f4f6'], borderWidth: 0, circumference: 180, rotation: 270 }] },
+            options: { cutout: '80%', plugins: { tooltip: { enabled: false } } }
+        });
+
+        const ctxB = document.getElementById('busyChart').getContext('2d');
+        let busyChart = new Chart(ctxB, {
+            type: 'bar',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [{ data: [1,1,1,1,1,1,1], backgroundColor: 'rgba(255, 255, 255, 0.3)', hoverBackgroundColor: '#fff', borderRadius: 20 }]
+            },
+            options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.5)', font: { size: 9, weight: '800' } } } } }
+        });
+
+        // --- CORE FUNCTIONS ---
+        function render() {
+            const list = document.getElementById('activity-list');
+            const hList = document.getElementById('history-list');
+            
+            list.innerHTML = '';
+            hList.innerHTML = '';
+
+            // Sort Active
+            activities.sort((a,b) => new Date(a.deadline) - new Date(b.deadline));
+
+            // Render Active
+            activities.forEach((task, i) => {
+                list.insertAdjacentHTML('beforeend', `
+                    <div class="bg-white p-5 rounded-[2rem] flex items-center justify-between border border-gray-50 shadow-sm hover:shadow-md transition-all group">
+                        <div class="flex items-center gap-5">
+                            <button onclick="completeTask(${i})" class="w-12 h-12 rounded-2xl bg-red-50 text-maroon hover:bg-maroon hover:text-white transition-all flex items-center justify-center shadow-inner"><i class="fas fa-check"></i></button>
+                            <div>
+                                <h4 class="font-bold text-gray-800">${task.title}</h4>
+                                <p class="text-[10px] text-gray-400 font-black uppercase mt-0.5 tracking-tighter">${task.category} • ${new Date(task.deadline).toLocaleDateString('id-ID', {day:'2-digit', month:'short'})}</p>
+                            </div>
+                        </div>
+                        <button onclick="deleteTask(${i})" class="opacity-0 group-hover:opacity-100 text-gray-200 hover:text-red-500 transition-all p-2"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                `);
+            });
+
+            // Render History
+            if(historyData.length === 0) hList.innerHTML = '<p class="text-gray-300 text-xs italic px-2 font-medium">No finished tasks yet.</p>';
+            historyData.forEach((task, i) => {
+                hList.insertAdjacentHTML('beforeend', `
+                    <div class="bg-gray-50 p-4 rounded-2xl flex items-center justify-between opacity-60 hover:opacity-100 transition-all">
+                        <div class="flex items-center gap-4">
+                            <div class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-[10px]"><i class="fas fa-check"></i></div>
+                            <h4 class="font-bold text-gray-500 line-through text-sm">${task.title}</h4>
+                        </div>
+                        <button onclick="undoTask(${i})" class="w-8 h-8 rounded-xl bg-white text-maroon shadow-sm hover:scale-110 transition-all flex items-center justify-center" title="Undo"><i class="fas fa-undo-alt text-[10px]"></i></button>
+                    </div>
+                `);
+            });
+
+            updateStats();
+        }
+
+        function updateStats() {
+            const total = activities.length + historyData.length;
+            document.getElementById('stat-ratio').innerText = `${historyData.length}/${total}`;
+            document.getElementById('active-count').innerText = `${activities.length} ACTIVE`;
+            
+            progressChart.data.datasets[0].data = [historyData.length, activities.length || 1];
+            progressChart.update();
+
+            // Update Busy Chart
+            const counts = [0,0,0,0,0,0,0];
+            activities.forEach(t => { 
+                const d = new Date(t.deadline).getDay(); 
+                counts[d === 0 ? 6 : d-1]++; 
+            });
+            busyChart.data.datasets[0].data = counts.map(v => v + 1);
+            busyChart.update();
+
+            localStorage.setItem('maroon_tasks', JSON.stringify(activities));
+            localStorage.setItem('maroon_history', JSON.stringify(historyData));
+        }
+
+        window.completeTask = (i) => { historyData.unshift(activities.splice(i, 1)[0]); render(); }
+        window.undoTask = (i) => { activities.push(historyData.splice(i, 1)[0]); render(); }
+        window.deleteTask = (i) => { activities.splice(i, 1); render(); }
+
+        document.getElementById('task-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            activities.push({
+                title: document.getElementById('title').value,
+                category: document.getElementById('category').value,
+                deadline: document.getElementById('deadline').value
+            });
+            e.target.reset();
+            render();
+        });
+
+        document.getElementById('display-date').innerText = new Date().toLocaleDateString('en-US', { weekday:'long', day:'numeric', month:'short', year:'numeric' });
+        render();
+    </script>
+</body>
+</html>
